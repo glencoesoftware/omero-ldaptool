@@ -30,6 +30,11 @@ The format of "config" is a standard Java properties file which should at a
 minimum include the `omero.db.*` and `omero.ldap.*` configuration
 options from your OMERO server.
 
+Additional non-standard options for socket timeout testing:
+
+* `omero.ldap.connect_timeout` (in milliseconds; sets `com.sun.jndi.ldap.connect.timeout` on the Spring LDAP default context source)
+* `omero.ldap.read_timeout` (in milliseconds; sets `com.sun.jndi.ldap.read.timeout` on the Spring LDAP default context source)
+
 Development Installation
 ========================
 

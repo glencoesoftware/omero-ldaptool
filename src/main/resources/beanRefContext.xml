@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE beans PUBLIC "-//SPRING//DTD BEAN//EN"
+  "http://www.springframework.org/dtd/spring-beans.dtd">
+<beans>
+    <description>
+        Defines the beans for the LDAP tool.
+    </description>
+
+    <!-- FROM ome/services/service-ome.api.ILdap.xml -->
+
+    <alias name="internal-ome.api.ILdap" alias="internal-ome.api.LocalLdap"/>
+
+    <bean name="internal-ome.api.ILdap" class="ome.logic.LdapImpl">
+        <description>
+                Privileged bean which has several "private" references
+                injected. This is not an example of what should be done.
+        </description>
+        <constructor-arg ref="contextSource"/>
+        <constructor-arg ref="ldapTemplate"/>
+        <constructor-arg ref="roles"/>
+        <constructor-arg ref="ldapConfig" />
+        <constructor-arg ref="roleProvider"/>
+        <constructor-arg ref="simpleSqlAction"/>
+    </bean>
+
+    <bean id="ldapConfig" class="ome.security.auth.LdapConfig">
+        <constructor-arg index="0" value="${omero.ldap.config}"/>
+        <constructor-arg index="1" value="${omero.ldap.new_user_group}"/>
+        <constructor-arg index="2" value="${omero.ldap.user_filter}" />
+        <constructor-arg index="3" value="${omero.ldap.group_filter}" />
+        <constructor-arg index="4" value="${omero.ldap.user_mapping}" />
+        <constructor-arg index="5" value="${omero.ldap.group_mapping}" />
+        <constructor-arg index="6" value="${omero.ldap.sync_on_login}" />
+        <constructor-arg index="7" value="${omero.ldap.base}"/>
+        <constructor-arg index="8" value="${omero.ldap.new_user_group_owner}"/>
+    </bean>
+
+    <bean id="ldapTemplate" class="org.springframework.ldap.core.LdapTemplate">
+        <constructor-arg ref="contextSource" />
+    </bean>
+
+    <bean id="contextSource" class="org.springframework.aop.framework.ProxyFactoryBean">
+        <property name="targetSource" ref="contextSourceSwapper"/>
+    </bean>
+
+
+    <bean id="contextSourceSwapper"
+            class="org.springframework.aop.target.HotSwappableTargetSource">
+        <constructor-arg ref="defaultContextSource"/>
+    </bean>
+
+    <bean id="defaultContextSource"
+            class="org.springframework.security.ldap.DefaultSpringSecurityContextSource">
+        <constructor-arg value="${omero.ldap.urls}"/>
+        <property name="userDn" value="${omero.ldap.username}" />
+        <property name="password" value="${omero.ldap.password}" />
+        <property name="base" value="${omero.ldap.base}" />
+        <property name="referral" value="${omero.ldap.referral}" />
+        <property name="dirObjectFactory"
+                value="org.springframework.ldap.core.support.DefaultDirObjectFactory" />
+        <property name="baseEnvironmentProperties">
+            <map>
+                <entry key="com.sun.jndi.ldap.connect.timeout"
+                       value="${omero.ldap.connect_timeout:-1}" />
+                <entry key="com.sun.jndi.ldap.read.timeout"
+                       value="${omero.ldap.read_timeout:-1}" />
+            </map>
+        </property>
+    </bean>
+
+    <!-- FROM ome/services/startup.xml -->
+
+    <bean id="dbPatchCheck"
+          class="ome.services.util.DBPatchCheck"
+          init-method="start" lazy-init="false">
+        <constructor-arg ref="simpleSqlAction"/>
+        <constructor-arg ref="preferenceContext"/>
+    </bean>
+
+    <bean id="dbUserCheck" depends-on="dbPatchCheck"
+          class="ome.services.util.DBUserCheck" lazy-init="false">
+        <constructor-arg ref="simpleSqlAction"/>
+        <constructor-arg ref="preferenceContext"/>
+        <constructor-arg ref="readOnlyStatus"/>
+    </bean>
+
+    <bean id="readOnlyStatus"
+          class="ome.services.util.ReadOnlyStatus">
+        <constructor-arg value="${omero.cluster.read_only}"/>
+        <constructor-arg value="${omero.cluster.read_only.db}"/>
+        <constructor-arg value="${omero.cluster.read_only.repo}"/>
+        <constructor-arg ref="sqlActionWrapper"/>
+        <constructor-arg value="${omero.data.dir}"/>
+        <constructor-arg value="${omero.managed.dir}"/>
+    </bean>
+
+    <!-- FROM ome/services/sec-primitives.xml -->
+
+    <bean id="roles" factory-bean="dbUserCheck" factory-method="getRoles"/>
+
+    <!-- FROM ome/services/service-ome.api.IAdmin.xml -->
+
+    <bean id="roleProvider" class="ome.security.auth.SimpleRoleProvider">
+        <constructor-arg><null/></constructor-arg>
+        <constructor-arg><null/></constructor-arg>
+        <constructor-arg><null/></constructor-arg>
+    </bean>
+
+</beans>

@@ -22,8 +22,6 @@ Usage: <main class> [--debug] [--help] <config> <username>
       <username>   Username to search for
       --debug      Set logging level to DEBUG
       --help       Display this help and exit
-Exception in thread "main" java.lang.NullPointerException
-    at com.glencoesoftware.ldaptool.Main.main(Main.java:90)
 ```
 
 The format of "config" is a standard Java properties file which should at a

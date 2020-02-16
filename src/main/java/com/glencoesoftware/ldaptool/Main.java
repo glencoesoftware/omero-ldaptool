@@ -87,7 +87,7 @@ public class Main implements Callable<Integer>
             log.error("Error when calling command", e);
             returnCode = 1;
         }
-        System.exit(returnCode);
+        System.exit(returnCode == null? 100 : returnCode);
     }
 
     @Override

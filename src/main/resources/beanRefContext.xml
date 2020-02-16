@@ -35,7 +35,7 @@
         <constructor-arg index="8" value="${omero.ldap.new_user_group_owner}"/>
     </bean>
 
-    <bean id="ldapTemplate" class="org.springframework.ldap.core.LdapTemplate">
+    <bean id="ldapTemplate" class="com.glencoesoftware.ldaptool.LoggingLdapTemplate">
         <constructor-arg ref="contextSource" />
     </bean>
 

@@ -24,6 +24,7 @@ import org.springframework.ldap.core.LdapTemplate;
 
 import ch.qos.logback.classic.Level;
 import ome.logic.LdapImpl;
+import ome.model.meta.Experimenter;
 import ome.system.OmeroContext;
 
 import java.io.File;
@@ -121,6 +122,15 @@ public class Main implements Callable<Integer>
         log.info("Referral set to: '{}'", referral);
         String dn = ldapImpl.findDN(username);
         log.info("Found DN: {}", dn);
+        Experimenter experimenter = ldapImpl.findExperimenter(username);
+        log.info(
+            "Experimenter field mappings id={} email={} firstName={} " +
+            "lastName={} institution={} ldap={} middleName={} omeName={}",
+            experimenter.getId(), experimenter.getEmail(),
+            experimenter.getFirstName(), experimenter.getLastName(),
+            experimenter.getInstitution(), experimenter.getLdap(),
+            experimenter.getMiddleName(), experimenter.getOmeName()
+        );
 
         return 0;
     }

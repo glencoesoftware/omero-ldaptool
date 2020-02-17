@@ -37,6 +37,8 @@
 
     <bean id="ldapTemplate" class="com.glencoesoftware.ldaptool.LoggingLdapTemplate">
         <constructor-arg ref="contextSource" />
+        <property name="ignorePartialResultException"
+                  value="${omero.ldap.ignore_partial_result_exception:false}" />
     </bean>
 
     <bean id="contextSource" class="org.springframework.aop.framework.ProxyFactoryBean">

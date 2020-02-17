@@ -20,6 +20,7 @@ package com.glencoesoftware.ldaptool;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.ldap.core.LdapTemplate;
 
 import ch.qos.logback.classic.Level;
 import ome.logic.LdapImpl;
@@ -27,6 +28,7 @@ import ome.system.OmeroContext;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.lang.reflect.Field;
 import java.util.Properties;
 import java.util.concurrent.Callable;
 
@@ -108,6 +110,15 @@ public class Main implements Callable<Integer>
 
         LdapImpl ldapImpl =
                 (LdapImpl) context.getBean("internal-ome.api.ILdap");
+        LdapTemplate ldapTemplate =
+                (LdapTemplate) context.getBean("ldapTemplate");
+        String referral = context.getProperty("omero.ldap.referral");
+        Field ignorePartialResultException =
+            LdapTemplate.class.getDeclaredField("ignorePartialResultException");
+        ignorePartialResultException.setAccessible(true);
+        log.info("Ignoring partial result exceptions? {}",
+                ignorePartialResultException.get(ldapTemplate));
+        log.info("Referral set to: '{}'", referral);
         String dn = ldapImpl.findDN(username);
         log.info("Found DN: {}", dn);
 

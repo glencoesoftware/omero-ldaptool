@@ -20,16 +20,20 @@ package com.glencoesoftware.ldaptool;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.ldap.core.DistinguishedName;
 import org.springframework.ldap.core.LdapTemplate;
 
 import ch.qos.logback.classic.Level;
 import ome.logic.LdapImpl;
+import ome.logic.LdapImpl.GroupLoader;
 import ome.model.meta.Experimenter;
 import ome.system.OmeroContext;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.lang.reflect.Field;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.Callable;
 
@@ -131,6 +135,10 @@ public class Main implements Callable<Integer>
             experimenter.getInstitution(), experimenter.getLdap(),
             experimenter.getMiddleName(), experimenter.getOmeName()
         );
+
+        List<Long> groupIds = ldapImpl.loadLdapGroups(
+                username, new DistinguishedName(dn));
+        log.info("Group IDs={}", Arrays.toString(groupIds.toArray()));
 
         return 0;
     }

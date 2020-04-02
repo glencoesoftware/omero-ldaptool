@@ -139,7 +139,7 @@ public class Main implements Callable<Integer>
         List<Long> groupIds = ldapImpl.loadLdapGroups(
                 username, new DistinguishedName(dn));
         log.info(
-            "Would be member of Groups IDs={}",
+            "Would be member of Group IDs={}",
             Arrays.toString(groupIds.toArray())
         );
 

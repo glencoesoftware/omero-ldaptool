@@ -33,7 +33,7 @@ public class MockSimpleRoleProvider extends SimpleRoleProvider {
         long id = nextExperimenterGroupId.getAndIncrement();
         log.info(
             "Would have created ExperimenterGroup id={} name={} perms={} " +
-            "strict={} isLdap={}", name, perms, strict, isLdap
+            "strict={} isLdap={}", id, name, perms, strict, isLdap
         );
         return id;
     }

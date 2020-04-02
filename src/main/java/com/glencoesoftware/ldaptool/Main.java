@@ -25,7 +25,6 @@ import org.springframework.ldap.core.LdapTemplate;
 
 import ch.qos.logback.classic.Level;
 import ome.logic.LdapImpl;
-import ome.logic.LdapImpl.GroupLoader;
 import ome.model.meta.Experimenter;
 import ome.system.OmeroContext;
 

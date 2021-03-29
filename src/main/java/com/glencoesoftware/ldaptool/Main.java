@@ -66,7 +66,8 @@ public class Main implements Callable<Integer>
 
     @Parameters(
         index = "1",
-        description = "Username to search for"
+        defaultValue = "",
+        description = "Username to search for (defaults to all users)"
     )
     String username;
 

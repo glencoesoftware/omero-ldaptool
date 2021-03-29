@@ -70,6 +70,10 @@ public class Main implements Callable<Integer>
     )
     String username;
 
+    // Non-CLI fields
+    LdapImpl ldapImpl;
+    LdapTemplate ldapTemplate;
+
     Main()
     {
         ch.qos.logback.classic.Logger root = (ch.qos.logback.classic.Logger)
@@ -80,7 +84,7 @@ public class Main implements Callable<Integer>
         }
         else
         {
-            root.setLevel(Level.INFO);
+            root.setLevel(Level.WARN);
         }
     }
 
@@ -99,7 +103,7 @@ public class Main implements Callable<Integer>
     @Override
     public Integer call() throws Exception {
         log.info("Loading LDAP configuration from: {}",
-                 config.getAbsolutePath());
+                config.getAbsolutePath());
         try (FileInputStream v = new FileInputStream(config)) {
             Properties properties = System.getProperties();
             properties.load(v);
@@ -107,22 +111,43 @@ public class Main implements Callable<Integer>
             System.setProperties(properties);
         }
 
-        OmeroContext context = new OmeroContext(new String [] {
+        OmeroContext context = new OmeroContext(new String[]{
                 "classpath:ome/config.xml",
                 "classpath:ome/services/datalayer.xml",
                 "classpath*:beanRefContext.xml"});
 
-        LdapImpl ldapImpl =
-                (LdapImpl) context.getBean("internal-ome.api.ILdap");
-        LdapTemplate ldapTemplate =
-                (LdapTemplate) context.getBean("ldapTemplate");
+        ldapImpl = (LdapImpl) context.getBean("internal-ome.api.ILdap");
+        ldapTemplate = (LdapTemplate) context.getBean("ldapTemplate");
         String referral = context.getProperty("omero.ldap.referral");
         Field ignorePartialResultException =
-            LdapTemplate.class.getDeclaredField("ignorePartialResultException");
+                LdapTemplate.class.getDeclaredField("ignorePartialResultException");
         ignorePartialResultException.setAccessible(true);
         log.info("Ignoring partial result exceptions? {}",
                 ignorePartialResultException.get(ldapTemplate));
         log.info("Referral set to: '{}'", referral);
+        if (username == null || username.isEmpty()) {
+            lookupAllUsers(ldapImpl, ldapTemplate);
+        } else {
+            lookupUser(ldapImpl, ldapTemplate);
+        }
+        return 0;
+    }
+
+    public void lookupAllUsers(LdapImpl ldapImpl, LdapTemplate ldapTemplate) {
+        List<Experimenter> users = ldapImpl.searchAll();
+        System.out.println("---");
+        for (Experimenter user : users) {
+            System.out.print("- " + user.getOmeName() + ":");
+            String dn = (String) user.retrieve("LDAP_DN");
+            System.out.println("  dn: " + dn);
+            System.out.println("  groups:");
+            // This class needs updating in omero-server to make it also return strings
+            // DistinguishedName dn = new DistinguishedName(dn);
+            // GroupLoader loader = new GroupLoader(username, dn);
+        }
+    }
+
+    public void lookupUser(LdapImpl ldapImpl, LdapTemplate template) {
         String dn = ldapImpl.findDN(username);
         log.info("Found DN: {}", dn);
         Experimenter experimenter = ldapImpl.findExperimenter(username);
@@ -141,8 +166,6 @@ public class Main implements Callable<Integer>
             "Would be member of Group IDs={}",
             Arrays.toString(groupIds.toArray())
         );
-
-        return 0;
     }
 
 }

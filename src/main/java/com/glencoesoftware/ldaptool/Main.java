@@ -25,11 +25,13 @@ import org.springframework.ldap.core.LdapTemplate;
 
 import ch.qos.logback.classic.Level;
 import ome.logic.LdapImpl;
+import ome.logic.LdapImpl.GroupLoader;
 import ome.model.meta.Experimenter;
 import ome.system.OmeroContext;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.List;
@@ -96,6 +98,17 @@ public class Main implements Callable<Integer>
         System.exit(returnCode == null? 100 : returnCode);
     }
 
+    public GroupLoader newGroupLoader(
+            LdapImpl ldapImpl, String username, DistinguishedName dn)
+                    throws Exception {
+        Class<?> clazz = Class.forName("ome.logic.LdapImpl$GroupLoader");
+        Constructor<?> constructor =
+            clazz.getDeclaredConstructor(
+                    LdapImpl.class, String.class, DistinguishedName.class);
+        constructor.setAccessible(true);
+        return (GroupLoader) constructor.newInstance(ldapImpl, username, dn);
+    }
+
     @Override
     public Integer call() throws Exception {
         log.info("Loading LDAP configuration from: {}",
@@ -135,11 +148,19 @@ public class Main implements Callable<Integer>
             experimenter.getMiddleName(), experimenter.getOmeName()
         );
 
-        List<Long> groupIds = ldapImpl.loadLdapGroups(
-                username, new DistinguishedName(dn));
+        GroupLoader groupLoader = newGroupLoader(
+                ldapImpl, username, new DistinguishedName(dn));
+        Field groups = LdapImpl.GroupLoader.class.getDeclaredField("groups");
+        groups.setAccessible(true);
+        List<Long> groupIds = (List<Long>) groups.get(groupLoader);
+        List<Long> ownedGroupIds = groupLoader.getOwnedGroups();
         log.info(
             "Would be member of Group IDs={}",
             Arrays.toString(groupIds.toArray())
+        );
+        log.info(
+            "Would be owner of Group IDs={}",
+            Arrays.toString(ownedGroupIds.toArray())
         );
 
         return 0;

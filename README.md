@@ -17,9 +17,10 @@ User lookup
 
 ```
 $ omero-ldaptool --help
-Usage: <main class> [--debug] [--help] <config> <username>
+[--all] [--debug] [--help] <config> <username>
       <config>     LDAP configuration properties file
-      <username>   Username to search for
+      <username>   Username to search for (ignored if --all is set)
+      --all        Print all users
       --debug      Set logging level to DEBUG
       --help       Display this help and exit
 ```

@@ -61,6 +61,9 @@ public class Main implements Callable<Integer>
     @Option(names = "--debug", description = "Set logging level to DEBUG")
     boolean debug;
 
+    @Option(names = "--all", description = "Print all users")
+    boolean all;
+
     @Parameters(
         index = "0",
         description = "LDAP configuration properties file"
@@ -70,9 +73,9 @@ public class Main implements Callable<Integer>
     @Parameters(
         index = "1",
         defaultValue = "",
-        description = "Username to search for (defaults to all users)"
+        description = "Username to search for (ignored if --all is set)"
     )
-    String username;
+    volatile String username;
 
     // Non-CLI fields
     LdapImpl ldapImpl;
@@ -140,31 +143,57 @@ public class Main implements Callable<Integer>
         log.info("Ignoring partial result exceptions? {}",
                 ignorePartialResultException.get(ldapTemplate));
         log.info("Referral set to: '{}'", referral);
-        if (username == null || username.isEmpty()) {
+
+        System.out.println("---");
+        if (all) {
             lookupAllUsers(ldapImpl, ldapTemplate);
         } else {
-            lookupUser(ldapImpl, ldapTemplate);
+            if (username == null || "".equals(username)) {
+                System.err.println("usage: CONFIGFILE USERNAME");
+                System.err.println("       CONFIGFILE --all");
+                return 2;
+            }
+            try {
+                Experimenter experimenter = ldapImpl.findExperimenter(username);
+                lookupUser(ldapImpl, ldapTemplate, experimenter);
+            } catch (ome.conditions.ApiUsageException api) {
+                System.err.println("no such user: " + username);
+                return 1;
+            }
         }
         return 0;
     }
 
     public void lookupAllUsers(LdapImpl ldapImpl, LdapTemplate ldapTemplate) throws Exception {
         List<Experimenter> users = ldapImpl.searchAll();
-        System.out.println("---");
         for (Experimenter user : users) {
-            System.out.print("- " + user.getOmeName() + ":");
-            String dn = (String) user.retrieve("LDAP_DN");
-            System.out.println("  dn: " + dn);
-            // This class needs updating in omero-server to make it also return strings
-            // DistinguishedName dn = new DistinguishedName(dn);
-            // GroupLoader loader = new GroupLoader(username, dn);
-            GroupLoader groupLoader = newGroupLoader(
-                    ldapImpl, user.getOmeName(), new DistinguishedName(dn));
-            Field groups = LdapImpl.GroupLoader.class.getDeclaredField("groups");
-            groups.setAccessible(true);
-            printGroup("owner", groupLoader.getOwnedGroups());
-            printGroup("member", (List<Long>) groups.get(groupLoader));
+            lookupUser(ldapImpl, ldapTemplate, user);
         }
+    }
+
+    public void lookupUser(LdapImpl ldapImpl, LdapTemplate template, Experimenter user) throws Exception {
+
+        String dn = (String) user.retrieve("LDAP_DN");
+
+        // This class needs updating in omero-server to make it also return strings
+        // DistinguishedName dn = new DistinguishedName(dn);
+        // GroupLoader loader = new GroupLoader(username, dn);
+        GroupLoader groupLoader = newGroupLoader(
+                ldapImpl, username, new DistinguishedName(dn));
+        Field groups = LdapImpl.GroupLoader.class.getDeclaredField("groups");
+        groups.setAccessible(true);
+        System.out.println("- dn: " + dn);
+        System.out.println("  omeName: " + user.getOmeName());
+        System.out.println("  id: " + user.getId());
+        System.out.println("  firstName: " + user.getFirstName());
+        System.out.println("  middleName: " + user.getMiddleName());
+        System.out.println("  lastName: " + user.getLastName());
+        System.out.println("  email: " + user.getEmail());
+        System.out.println("  institution: " + user.getInstitution());
+        System.out.println("  ldap: " + user.getLdap());
+        printGroup("owner", groupLoader.getOwnedGroups());
+        printGroup("member", (List<Long>) groups.get(groupLoader));
+
     }
 
     private void printGroup(String key, List<Long> groups) {
@@ -174,35 +203,6 @@ public class Main implements Callable<Integer>
             joiner.add(id.toString());
         }
         System.out.println(String.format("[%s]", joiner.toString()));
-    }
-
-    public void lookupUser(LdapImpl ldapImpl, LdapTemplate template) throws Exception {
-        String dn = ldapImpl.findDN(username);
-        log.info("Found DN: {}", dn);
-        Experimenter experimenter = ldapImpl.findExperimenter(username);
-        log.info(
-            "Experimenter field mappings id={} email={} firstName={} " +
-            "lastName={} institution={} ldap={} middleName={} omeName={}",
-            experimenter.getId(), experimenter.getEmail(),
-            experimenter.getFirstName(), experimenter.getLastName(),
-            experimenter.getInstitution(), experimenter.getLdap(),
-            experimenter.getMiddleName(), experimenter.getOmeName()
-        );
-
-        GroupLoader groupLoader = newGroupLoader(
-                ldapImpl, username, new DistinguishedName(dn));
-        Field groups = LdapImpl.GroupLoader.class.getDeclaredField("groups");
-        groups.setAccessible(true);
-        List<Long> groupIds = (List<Long>) groups.get(groupLoader);
-        List<Long> ownedGroupIds = groupLoader.getOwnedGroups();
-        log.info(
-            "Would be member of Group IDs={}",
-            Arrays.toString(groupIds.toArray())
-        );
-        log.info(
-            "Would be owner of Group IDs={}",
-            Arrays.toString(ownedGroupIds.toArray())
-        );
     }
 
 }

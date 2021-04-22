@@ -17,12 +17,12 @@ User lookup
 
 ```
 $ omero-ldaptool --help
-[--all] [--debug] [--help] <config> <username>
-      <config>     LDAP configuration properties file
-      <username>   Username to search for (ignored if --all is set)
-      --all        Print all users
-      --debug      Set logging level to DEBUG
-      --help       Display this help and exit
+Usage: <main class> [--debug] [--help] (--all | --user=<username>) <config>
+      <config>            LDAP configuration properties file
+      --all               Print all users
+      --debug             Set logging level to DEBUG
+      --help              Display this help and exit
+      --user=<username>   Username to search
 ```
 
 The format of "config" is a standard Java properties file which should at a

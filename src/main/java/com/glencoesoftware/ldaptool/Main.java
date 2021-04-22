@@ -40,6 +40,7 @@ import java.util.StringJoiner;
 import java.util.concurrent.Callable;
 
 import picocli.CommandLine;
+import picocli.CommandLine.ArgGroup;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.Parameters;
 
@@ -61,21 +62,22 @@ public class Main implements Callable<Integer>
     @Option(names = "--debug", description = "Set logging level to DEBUG")
     boolean debug;
 
-    @Option(names = "--all", description = "Print all users")
-    boolean all;
+    @ArgGroup(exclusive = true, multiplicity = "1")
+    SearchFor searchFor;
+
+    static class SearchFor {
+        @Option(names = "--all", description = "Print all users")
+        boolean all;
+
+        @Option(names = "--user", description = "Username to search")
+        String username;
+    }
 
     @Parameters(
         index = "0",
         description = "LDAP configuration properties file"
     )
     File config;
-
-    @Parameters(
-        index = "1",
-        defaultValue = "",
-        description = "Username to search for (ignored if --all is set)"
-    )
-    volatile String username;
 
     // Non-CLI fields
     LdapImpl ldapImpl;
@@ -145,19 +147,14 @@ public class Main implements Callable<Integer>
         log.info("Referral set to: '{}'", referral);
 
         System.out.println("---");
-        if (all) {
+        if (searchFor.all) {
             lookupAllUsers(ldapImpl, ldapTemplate);
         } else {
-            if (username == null || "".equals(username)) {
-                System.err.println("usage: CONFIGFILE USERNAME");
-                System.err.println("       CONFIGFILE --all");
-                return 2;
-            }
             try {
-                Experimenter experimenter = ldapImpl.findExperimenter(username);
+                Experimenter experimenter = ldapImpl.findExperimenter(searchFor.username);
                 lookupUser(ldapImpl, ldapTemplate, experimenter);
             } catch (ome.conditions.ApiUsageException api) {
-                System.err.println("no such user: " + username);
+                System.err.println("no such user: " + searchFor.username);
                 return 1;
             }
         }
@@ -176,10 +173,8 @@ public class Main implements Callable<Integer>
         String dn = (String) user.retrieve("LDAP_DN");
 
         // This class needs updating in omero-server to make it also return strings
-        // DistinguishedName dn = new DistinguishedName(dn);
-        // GroupLoader loader = new GroupLoader(username, dn);
         GroupLoader groupLoader = newGroupLoader(
-                ldapImpl, username, new DistinguishedName(dn));
+                ldapImpl, user.getOmeName(), new DistinguishedName(dn));
         Field groups = LdapImpl.GroupLoader.class.getDeclaredField("groups");
         groups.setAccessible(true);
         System.out.println("- dn: " + dn);

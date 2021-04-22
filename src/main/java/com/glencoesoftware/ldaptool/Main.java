@@ -177,18 +177,26 @@ public class Main implements Callable<Integer>
                 ldapImpl, user.getOmeName(), new DistinguishedName(dn));
         Field groups = LdapImpl.GroupLoader.class.getDeclaredField("groups");
         groups.setAccessible(true);
-        System.out.println("- dn: " + dn);
-        System.out.println("  omeName: " + user.getOmeName());
+        printString("- dn", dn);
         System.out.println("  id: " + user.getId());
-        System.out.println("  firstName: " + user.getFirstName());
-        System.out.println("  middleName: " + user.getMiddleName());
-        System.out.println("  lastName: " + user.getLastName());
-        System.out.println("  email: " + user.getEmail());
-        System.out.println("  institution: " + user.getInstitution());
+        printString("  omeName", user.getOmeName());
+        printString("  firstName", user.getFirstName());
+        printString("  middleName", user.getMiddleName());
+        printString("  lastName", user.getLastName());
+        printString("  email", user.getEmail());
+        printString("  institution", user.getInstitution());
         System.out.println("  ldap: " + user.getLdap());
         printGroup("owner", groupLoader.getOwnedGroups());
         printGroup("member", (List<Long>) groups.get(groupLoader));
 
+    }
+
+    private void printString(String key, String value) {
+        String out = value;
+        if (out != null) {
+            out = '"' + out + '"';
+        }
+        System.out.println(String.format("%s: %s", key, out));
     }
 
     private void printGroup(String key, List<Long> groups) {

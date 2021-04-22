@@ -5,7 +5,7 @@ plugins {
 }
 
 group = 'com.glencoesoftware.ldaptool'
-version = '0.1.2'
+version = '0.1.4-SNAPSHOT'
 
 mainClassName = 'com.glencoesoftware.ldaptool.Main'
 
@@ -19,7 +19,7 @@ repositories {
         url 'https://artifacts.unidata.ucar.edu/content/repositories/unidata-releases'
     }
     maven {
-        url 'http://artifacts.openmicroscopy.org/artifactory/maven/'
+        url 'https://artifacts.openmicroscopy.org/artifactory/maven/'
     }
 }
 
@@ -68,21 +68,20 @@ configurations.all {
 }
 
 dependencies {
-    compile ('omero:blitz:5.4.10-ice36-b105') {
+    implementation ('omero:blitz:5.4.10-ice36-b105') {
         exclude group: 'org.testng', module: 'testng'
     }
-    compile 'ch.qos.logback:logback-classic:1.1.7'
-    compile 'ch.qos.logback:logback-core:1.1.7'
-    compile 'net.sourceforge.argparse4j:argparse4j:0.7.0'
-    compile 'info.picocli:picocli:3.9.3'
-    testCompile 'org.testng:testng:6.10'
+    implementation 'ch.qos.logback:logback-classic:1.1.7'
+    implementation 'ch.qos.logback:logback-core:1.1.7'
+    implementation 'info.picocli:picocli:3.9.3'
+    testImplementation 'org.testng:testng:6.10'
 }
 
 jar {
     manifest {
         attributes(
             "Main-Class": mainClassName,
-            "Implementation-Version": version
+            "Implementation-Version": archiveVersion
         )
     }
 }

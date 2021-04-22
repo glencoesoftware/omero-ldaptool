@@ -25,15 +25,18 @@ import org.springframework.ldap.core.LdapTemplate;
 
 import ch.qos.logback.classic.Level;
 import ome.logic.LdapImpl;
+import ome.logic.LdapImpl.GroupLoader;
 import ome.model.meta.Experimenter;
 import ome.system.OmeroContext;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
+import java.util.StringJoiner;
 import java.util.concurrent.Callable;
 
 import picocli.CommandLine;
@@ -101,6 +104,17 @@ public class Main implements Callable<Integer>
         System.exit(returnCode == null? 100 : returnCode);
     }
 
+    public GroupLoader newGroupLoader(
+            LdapImpl ldapImpl, String username, DistinguishedName dn)
+                    throws Exception {
+        Class<?> clazz = Class.forName("ome.logic.LdapImpl$GroupLoader");
+        Constructor<?> constructor =
+            clazz.getDeclaredConstructor(
+                    LdapImpl.class, String.class, DistinguishedName.class);
+        constructor.setAccessible(true);
+        return (GroupLoader) constructor.newInstance(ldapImpl, username, dn);
+    }
+
     @Override
     public Integer call() throws Exception {
         log.info("Loading LDAP configuration from: {}",
@@ -134,21 +148,35 @@ public class Main implements Callable<Integer>
         return 0;
     }
 
-    public void lookupAllUsers(LdapImpl ldapImpl, LdapTemplate ldapTemplate) {
+    public void lookupAllUsers(LdapImpl ldapImpl, LdapTemplate ldapTemplate) throws Exception {
         List<Experimenter> users = ldapImpl.searchAll();
         System.out.println("---");
         for (Experimenter user : users) {
             System.out.print("- " + user.getOmeName() + ":");
             String dn = (String) user.retrieve("LDAP_DN");
             System.out.println("  dn: " + dn);
-            System.out.println("  groups:");
             // This class needs updating in omero-server to make it also return strings
             // DistinguishedName dn = new DistinguishedName(dn);
             // GroupLoader loader = new GroupLoader(username, dn);
+            GroupLoader groupLoader = newGroupLoader(
+                    ldapImpl, user.getOmeName(), new DistinguishedName(dn));
+            Field groups = LdapImpl.GroupLoader.class.getDeclaredField("groups");
+            groups.setAccessible(true);
+            printGroup("owner", groupLoader.getOwnedGroups());
+            printGroup("member", (List<Long>) groups.get(groupLoader));
         }
     }
 
-    public void lookupUser(LdapImpl ldapImpl, LdapTemplate template) {
+    private void printGroup(String key, List<Long> groups) {
+        System.out.print(String.format("  %s: ", key));
+        StringJoiner joiner = new StringJoiner(", ");
+        for (Long id : groups) {
+            joiner.add(id.toString());
+        }
+        System.out.println(String.format("[%s]", joiner.toString()));
+    }
+
+    public void lookupUser(LdapImpl ldapImpl, LdapTemplate template) throws Exception {
         String dn = ldapImpl.findDN(username);
         log.info("Found DN: {}", dn);
         Experimenter experimenter = ldapImpl.findExperimenter(username);
@@ -161,11 +189,19 @@ public class Main implements Callable<Integer>
             experimenter.getMiddleName(), experimenter.getOmeName()
         );
 
-        List<Long> groupIds = ldapImpl.loadLdapGroups(
-                username, new DistinguishedName(dn));
+        GroupLoader groupLoader = newGroupLoader(
+                ldapImpl, username, new DistinguishedName(dn));
+        Field groups = LdapImpl.GroupLoader.class.getDeclaredField("groups");
+        groups.setAccessible(true);
+        List<Long> groupIds = (List<Long>) groups.get(groupLoader);
+        List<Long> ownedGroupIds = groupLoader.getOwnedGroups();
         log.info(
             "Would be member of Group IDs={}",
             Arrays.toString(groupIds.toArray())
+        );
+        log.info(
+            "Would be owner of Group IDs={}",
+            Arrays.toString(ownedGroupIds.toArray())
         );
     }
 

@@ -178,34 +178,35 @@ public class Main implements Callable<Integer>
         Field groups = LdapImpl.GroupLoader.class.getDeclaredField("groups");
         groups.setAccessible(true);
         printString("- dn", dn);
-        System.out.println("  id: " + user.getId());
         printString("  omeName", user.getOmeName());
         printString("  firstName", user.getFirstName());
         printString("  middleName", user.getMiddleName());
         printString("  lastName", user.getLastName());
         printString("  email", user.getEmail());
         printString("  institution", user.getInstitution());
-        System.out.println("  ldap: " + user.getLdap());
         printGroup("owner", groupLoader.getOwnedGroups());
         printGroup("member", (List<Long>) groups.get(groupLoader));
 
     }
 
     private void printString(String key, String value) {
-        String out = value;
-        if (out != null) {
-            out = '"' + out + '"';
+        if (value == null) {
+            return;
         }
-        System.out.println(String.format("%s: %s", key, out));
+        value = '"' + value + '"';
+        System.out.println(String.format("%s: %s", key, value));
     }
 
     private void printGroup(String key, List<Long> groups) {
-        System.out.print(String.format("  %s: ", key));
+        if (groups == null || groups.size() == 0) {
+            return;
+        }
+
         StringJoiner joiner = new StringJoiner(", ");
         for (Long id : groups) {
             joiner.add(id.toString());
         }
-        System.out.println(String.format("[%s]", joiner.toString()));
+        System.out.println(String.format("  %s: [%s]", key, joiner.toString()));
     }
 
 }

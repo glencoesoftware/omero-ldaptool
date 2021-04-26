@@ -83,19 +83,7 @@ public class Main implements Callable<Integer>
     LdapImpl ldapImpl;
     LdapTemplate ldapTemplate;
 
-    Main()
-    {
-        ch.qos.logback.classic.Logger root = (ch.qos.logback.classic.Logger)
-                LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
-        if (debug)
-        {
-            root.setLevel(Level.DEBUG);
-        }
-        else
-        {
-            root.setLevel(Level.WARN);
-        }
-    }
+    Main() { }
 
     public static void main(String[] args)
     {
@@ -122,6 +110,17 @@ public class Main implements Callable<Integer>
 
     @Override
     public Integer call() throws Exception {
+        ch.qos.logback.classic.Logger root = (ch.qos.logback.classic.Logger)
+                LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
+        if (debug)
+        {
+            root.setLevel(Level.DEBUG);
+        }
+        else
+        {
+            root.setLevel(Level.WARN);
+        }
+
         log.info("Loading LDAP configuration from: {}",
                 config.getAbsolutePath());
         try (FileInputStream v = new FileInputStream(config)) {

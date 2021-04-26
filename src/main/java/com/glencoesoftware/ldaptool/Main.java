@@ -59,8 +59,13 @@ public class Main implements Callable<Integer>
     )
     boolean help;
 
-    @Option(names = "--debug", description = "Set logging level to DEBUG")
-    boolean debug;
+    @Option(
+            names = "--log-level",
+            description = "Change logging level; valid values are " +
+              "OFF, ERROR, WARN, INFO, DEBUG, TRACE and ALL. " +
+              "(default: ${DEFAULT-VALUE})"
+          )
+    String logLevel = "WARN";
 
     @ArgGroup(exclusive = true, multiplicity = "1")
     SearchFor searchFor;
@@ -112,14 +117,7 @@ public class Main implements Callable<Integer>
     public Integer call() throws Exception {
         ch.qos.logback.classic.Logger root = (ch.qos.logback.classic.Logger)
                 LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
-        if (debug)
-        {
-            root.setLevel(Level.DEBUG);
-        }
-        else
-        {
-            root.setLevel(Level.WARN);
-        }
+        root.setLevel(Level.toLevel(logLevel));
 
         log.info("Loading LDAP configuration from: {}",
                 config.getAbsolutePath());

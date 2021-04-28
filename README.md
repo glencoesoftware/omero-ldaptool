@@ -6,7 +6,7 @@ Command line tool for working with OMERO and LDAP
 Requirements
 ============
 
-* OMERO 5.4.x+
+* OMERO 5.6.x+
 * Java 8+
 
 Workflow
@@ -17,21 +17,23 @@ User lookup
 
 ```
 $ omero-ldaptool --help
-Usage: <main class> [--debug] [--help] <config> <username>
-      <config>     LDAP configuration properties file
-      <username>   Username to search for
-      --debug      Set logging level to DEBUG
-      --help       Display this help and exit
+Usage: <main class> [--help] [--log-level=<logLevel>] (--all |
+                    --user=<username>) <config>
+      <config>            LDAP configuration properties file
+      --all               Print all users
+      --help              Display this help and exit
+      --log-level=<logLevel>
+                          Change logging level; valid values are OFF, ERROR,
+                            WARN, INFO, DEBUG, TRACE and ALL. (default: WARN)
+      --user=<username>   Username to search
 ```
 
 The format of "config" is a standard Java properties file which should at a
 minimum include the `omero.db.*` and `omero.ldap.*` configuration
-options from your OMERO server.
+options from your OMERO server:
 
-Additional non-standard options for socket timeout testing:
-
-* `omero.ldap.connect_timeout` (in milliseconds; sets `com.sun.jndi.ldap.connect.timeout` on the Spring LDAP default context source)
-* `omero.ldap.read_timeout` (in milliseconds; sets `com.sun.jndi.ldap.read.timeout` on the Spring LDAP default context source)
+* https://docs.openmicroscopy.org/omero/5.6.3/sysadmins/server-ldap.html
+* https://docs.openmicroscopy.org/omero/5.6.3/sysadmins/config.html#ldap
 
 Development Installation
 ========================

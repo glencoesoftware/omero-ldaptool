@@ -36,9 +36,11 @@ import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
+import java.util.StringJoiner;
 import java.util.concurrent.Callable;
 
 import picocli.CommandLine;
+import picocli.CommandLine.ArgGroup;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.Parameters;
 
@@ -57,8 +59,24 @@ public class Main implements Callable<Integer>
     )
     boolean help;
 
-    @Option(names = "--debug", description = "Set logging level to DEBUG")
-    boolean debug;
+    @Option(
+            names = "--log-level",
+            description = "Change logging level; valid values are " +
+              "OFF, ERROR, WARN, INFO, DEBUG, TRACE and ALL. " +
+              "(default: ${DEFAULT-VALUE})"
+          )
+    String logLevel = "WARN";
+
+    @ArgGroup(exclusive = true, multiplicity = "1")
+    SearchFor searchFor;
+
+    static class SearchFor {
+        @Option(names = "--all", description = "Print all users")
+        boolean all;
+
+        @Option(names = "--user", description = "Username to search")
+        String username;
+    }
 
     @Parameters(
         index = "0",
@@ -66,25 +84,11 @@ public class Main implements Callable<Integer>
     )
     File config;
 
-    @Parameters(
-        index = "1",
-        description = "Username to search for"
-    )
-    String username;
+    // Non-CLI fields
+    LdapImpl ldapImpl;
+    LdapTemplate ldapTemplate;
 
-    Main()
-    {
-        ch.qos.logback.classic.Logger root = (ch.qos.logback.classic.Logger)
-                LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
-        if (debug)
-        {
-            root.setLevel(Level.DEBUG);
-        }
-        else
-        {
-            root.setLevel(Level.INFO);
-        }
-    }
+    Main() { }
 
     public static void main(String[] args)
     {
@@ -111,8 +115,12 @@ public class Main implements Callable<Integer>
 
     @Override
     public Integer call() throws Exception {
+        ch.qos.logback.classic.Logger root = (ch.qos.logback.classic.Logger)
+                LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
+        root.setLevel(Level.toLevel(logLevel));
+
         log.info("Loading LDAP configuration from: {}",
-                 config.getAbsolutePath());
+                config.getAbsolutePath());
         try (FileInputStream v = new FileInputStream(config)) {
             Properties properties = System.getProperties();
             properties.load(v);
@@ -120,50 +128,82 @@ public class Main implements Callable<Integer>
             System.setProperties(properties);
         }
 
-        OmeroContext context = new OmeroContext(new String [] {
+        OmeroContext context = new OmeroContext(new String[]{
                 "classpath:ome/config.xml",
                 "classpath:ome/services/datalayer.xml",
                 "classpath*:beanRefContext.xml"});
 
-        LdapImpl ldapImpl =
-                (LdapImpl) context.getBean("internal-ome.api.ILdap");
-        LdapTemplate ldapTemplate =
-                (LdapTemplate) context.getBean("ldapTemplate");
+        ldapImpl = (LdapImpl) context.getBean("internal-ome.api.ILdap");
+        ldapTemplate = (LdapTemplate) context.getBean("ldapTemplate");
         String referral = context.getProperty("omero.ldap.referral");
         Field ignorePartialResultException =
-            LdapTemplate.class.getDeclaredField("ignorePartialResultException");
+                LdapTemplate.class.getDeclaredField("ignorePartialResultException");
         ignorePartialResultException.setAccessible(true);
         log.info("Ignoring partial result exceptions? {}",
                 ignorePartialResultException.get(ldapTemplate));
         log.info("Referral set to: '{}'", referral);
-        String dn = ldapImpl.findDN(username);
-        log.info("Found DN: {}", dn);
-        Experimenter experimenter = ldapImpl.findExperimenter(username);
-        log.info(
-            "Experimenter field mappings id={} email={} firstName={} " +
-            "lastName={} institution={} ldap={} middleName={} omeName={}",
-            experimenter.getId(), experimenter.getEmail(),
-            experimenter.getFirstName(), experimenter.getLastName(),
-            experimenter.getInstitution(), experimenter.getLdap(),
-            experimenter.getMiddleName(), experimenter.getOmeName()
-        );
 
+        System.out.println("---");
+        if (searchFor.all) {
+            lookupAllUsers(ldapImpl, ldapTemplate);
+        } else {
+            try {
+                Experimenter experimenter = ldapImpl.findExperimenter(searchFor.username);
+                lookupUser(ldapImpl, ldapTemplate, experimenter);
+            } catch (ome.conditions.ApiUsageException api) {
+                System.err.println("no such user: " + searchFor.username);
+                return 1;
+            }
+        }
+        return 0;
+    }
+
+    public void lookupAllUsers(LdapImpl ldapImpl, LdapTemplate ldapTemplate) throws Exception {
+        List<Experimenter> users = ldapImpl.searchAll();
+        for (Experimenter user : users) {
+            lookupUser(ldapImpl, ldapTemplate, user);
+        }
+    }
+
+    public void lookupUser(LdapImpl ldapImpl, LdapTemplate template, Experimenter user) throws Exception {
+
+        String dn = (String) user.retrieve("LDAP_DN");
+
+        // This class needs updating in omero-server to make it also return strings
         GroupLoader groupLoader = newGroupLoader(
-                ldapImpl, username, new DistinguishedName(dn));
+                ldapImpl, user.getOmeName(), new DistinguishedName(dn));
         Field groups = LdapImpl.GroupLoader.class.getDeclaredField("groups");
         groups.setAccessible(true);
-        List<Long> groupIds = (List<Long>) groups.get(groupLoader);
-        List<Long> ownedGroupIds = groupLoader.getOwnedGroups();
-        log.info(
-            "Would be member of Group IDs={}",
-            Arrays.toString(groupIds.toArray())
-        );
-        log.info(
-            "Would be owner of Group IDs={}",
-            Arrays.toString(ownedGroupIds.toArray())
-        );
+        printString("- dn", dn);
+        printString("  omeName", user.getOmeName());
+        printString("  firstName", user.getFirstName());
+        printString("  middleName", user.getMiddleName());
+        printString("  lastName", user.getLastName());
+        printString("  email", user.getEmail());
+        printString("  institution", user.getInstitution());
+        printGroup("owner", groupLoader.getOwnedGroups());
+        printGroup("member", (List<Long>) groups.get(groupLoader));
 
-        return 0;
+    }
+
+    private void printString(String key, String value) {
+        if (value == null) {
+            return;
+        }
+        value = '"' + value + '"';
+        System.out.println(String.format("%s: %s", key, value));
+    }
+
+    private void printGroup(String key, List<Long> groups) {
+        if (groups == null || groups.size() == 0) {
+            return;
+        }
+
+        StringJoiner joiner = new StringJoiner(", ");
+        for (Long id : groups) {
+            joiner.add(id.toString());
+        }
+        System.out.println(String.format("  %s: [%s]", key, joiner.toString()));
     }
 
 }

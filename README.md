@@ -32,8 +32,8 @@ The format of "config" is a standard Java properties file which should at a
 minimum include the `omero.db.*` and `omero.ldap.*` configuration
 options from your OMERO server:
 
-* https://docs.openmicroscopy.org/omero/5.6.3/sysadmins/server-ldap.html
-* https://docs.openmicroscopy.org/omero/5.6.3/sysadmins/config.html#ldap
+* https://docs.openmicroscopy.org/omero/latest/sysadmins/server-ldap.html
+* https://docs.openmicroscopy.org/omero/latest/sysadmins/config.html#ldap
 
 Development Installation
 ========================

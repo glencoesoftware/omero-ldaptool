@@ -40,12 +40,14 @@ import java.util.concurrent.Callable;
 
 import picocli.CommandLine;
 import picocli.CommandLine.ArgGroup;
+import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.Parameters;
 
 /**
  * @author Chris Allan <callan@glencoesoftware.com>
  */
+@Command(exitCodeOnExecutionException = 100)
 public class Main implements Callable<Integer>
 {
     private static final Logger log =
@@ -91,14 +93,8 @@ public class Main implements Callable<Integer>
 
     public static void main(String[] args)
     {
-        Integer returnCode;
-        try {
-            returnCode = CommandLine.call(new Main(), args);
-        } catch (Exception e) {
-            log.error("Error when calling command", e);
-            returnCode = 1;
-        }
-        System.exit(returnCode == null? 100 : returnCode);
+        int exitCode = new CommandLine(new Main()).execute(args);
+        System.exit(exitCode);
     }
 
     public GroupLoader newGroupLoader(

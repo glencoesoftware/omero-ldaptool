@@ -41,7 +41,7 @@ import picocli.CommandLine.ParseResult;
  */
 @Command(
     mixinStandardHelpOptions = true,
-    subcommands = Search.class,
+    subcommands = {Password.class, Search.class},
     exitCodeOnExecutionException = 100
 )
 public class Main

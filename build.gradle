@@ -43,10 +43,10 @@ configurations.all {
 }
 
 dependencies {
-    implementation 'org.openmicroscopy:omero-blitz:5.5.10'
+    implementation 'org.openmicroscopy:omero-blitz:5.7.1'
     implementation 'org.springframework.security:spring-security-ldap:4.2.4.RELEASE'
-    implementation 'ch.qos.logback:logback-classic:1.2.11'
-    implementation 'ch.qos.logback:logback-core:1.2.11'
+    implementation 'ch.qos.logback:logback-classic:1.2.12'
+    implementation 'ch.qos.logback:logback-core:1.2.12'
     implementation 'org.slf4j:jcl-over-slf4j:1.7.36'
     implementation 'info.picocli:picocli:4.6.1'
     testImplementation 'org.testng:testng:6.10'

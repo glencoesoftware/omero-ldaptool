@@ -49,6 +49,14 @@ public class Password implements Callable<Integer>
     )
     String password;
 
+    @Option(
+        names = {"--tries"},
+        description =
+            "Number of times to retry the password check " +
+            "(default: ${DEFAULT-VALUE})"
+    )
+    int tries = 1;
+
     @Parameters(
         index = "0",
         description = "DN to check password for"
@@ -62,12 +70,16 @@ public class Password implements Callable<Integer>
 
     @Override
     public Integer call() throws Exception {
-        if (main.ldapImpl.validatePassword(dn, password)) {
-            System.out.println("Password check successful!");
-            return 0;
+        int exitCode = 0;
+        for (int i = 0; i < tries; i++) {
+            if (main.ldapImpl.validatePassword(dn, password)) {
+                System.out.println("Password check successful!");
+            } else {
+                System.out.println("Password check failed!");
+                exitCode = 1;
+            }
         }
-        System.out.println("Password check failed!");
-        return 1;
+        return exitCode;
     }
 
 }

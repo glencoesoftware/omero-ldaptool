@@ -76,7 +76,7 @@ public class Main implements Callable<Integer>
         boolean all;
 
         @Option(names = "--user", description = "Username to search")
-        String username;
+        String[] username;
     }
 
     @Parameters(
@@ -142,12 +142,15 @@ public class Main implements Callable<Integer>
         if (searchFor.all) {
             lookupAllUsers(ldapImpl, ldapTemplate);
         } else {
-            try {
-                Experimenter experimenter = ldapImpl.findExperimenter(searchFor.username);
-                lookupUser(ldapImpl, ldapTemplate, experimenter);
-            } catch (ome.conditions.ApiUsageException api) {
-                System.err.println("no such user: " + searchFor.username);
-                return 1;
+            for (String username : searchFor.username) {
+                try {
+                    Experimenter experimenter =
+                            ldapImpl.findExperimenter(username);
+                    lookupUser(ldapImpl, ldapTemplate, experimenter);
+                } catch (ome.conditions.ApiUsageException api) {
+                    System.err.println("no such user: " + searchFor.username);
+                    return 1;
+                }
             }
         }
         return 0;

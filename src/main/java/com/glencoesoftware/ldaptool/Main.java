@@ -35,6 +35,7 @@ import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.ParseResult;
+import picocli.CommandLine.ScopeType;
 
 /**
  * @author Chris Allan <callan@glencoesoftware.com>
@@ -53,14 +54,16 @@ public class Main
         names = "--log-level",
         description = "Change logging level; valid values are " +
             "OFF, ERROR, WARN, INFO, DEBUG, TRACE and ALL. " +
-            "(default: ${DEFAULT-VALUE})"
+            "(default: ${DEFAULT-VALUE})",
+        scope = ScopeType.INHERIT
     )
     String logLevel = "WARN";
 
     @Option(
         names = "--config",
         description = "LDAP configuration properties file",
-        required = true
+        required = true,
+        scope = ScopeType.INHERIT
     )
     File config;
 

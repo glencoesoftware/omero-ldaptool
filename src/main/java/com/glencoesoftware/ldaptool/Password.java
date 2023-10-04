@@ -34,7 +34,8 @@ import picocli.CommandLine.ParentCommand;
 @Command(
     name = "password",
     mixinStandardHelpOptions = true,
-    exitCodeOnExecutionException = 100
+    exitCodeOnExecutionException = 100,
+    versionProvider = VersionProvider.class
 )
 public class Password implements Callable<Integer>
 {

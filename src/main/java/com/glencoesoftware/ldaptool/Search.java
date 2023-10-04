@@ -44,7 +44,8 @@ import picocli.CommandLine.ParentCommand;
 @Command(
     name = "search",
     mixinStandardHelpOptions = true,
-    exitCodeOnExecutionException = 100
+    exitCodeOnExecutionException = 100,
+    versionProvider = VersionProvider.class
 )
 public class Search implements Callable<Integer>
 {

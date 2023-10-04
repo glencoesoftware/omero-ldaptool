@@ -41,9 +41,11 @@ import picocli.CommandLine.ScopeType;
  * @author Chris Allan <callan@glencoesoftware.com>
  */
 @Command(
+    name = "omero-ldaptool",
     mixinStandardHelpOptions = true,
     subcommands = {Password.class, Search.class},
-    exitCodeOnExecutionException = 100
+    exitCodeOnExecutionException = 100,
+    versionProvider = VersionProvider.class
 )
 public class Main
 {
@@ -123,5 +125,4 @@ public class Main
         ldapImpl = (LdapImpl) context.getBean("internal-ome.api.ILdap");
         ldapTemplate = (LdapTemplate) context.getBean("ldapTemplate");
     }
-
 }

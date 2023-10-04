@@ -87,7 +87,7 @@ public class Search implements Callable<Integer>
                             main.ldapImpl.findExperimenter(username);
                     lookupUser(main.ldapImpl, main.ldapTemplate, experimenter);
                 } catch (ome.conditions.ApiUsageException api) {
-                    System.err.println("no such user: " + searchFor.username);
+                    System.err.println("no such user: " + username);
                     return 1;
                 }
             }

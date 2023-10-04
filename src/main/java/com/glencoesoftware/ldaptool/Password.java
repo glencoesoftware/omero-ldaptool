@@ -42,14 +42,6 @@ public class Password implements Callable<Integer>
             LoggerFactory.getLogger(Password.class);
 
     @Option(
-        names = {"-p", "--password"},
-        description = "Passphrase",
-        interactive = true,
-        required = true
-    )
-    String password;
-
-    @Option(
         names = {"--tries"},
         description =
             "Number of times to retry the password check " +
@@ -70,9 +62,11 @@ public class Password implements Callable<Integer>
 
     @Override
     public Integer call() throws Exception {
+        String passphrase = String.valueOf(System.console().readPassword(
+                "Enter passphrase for '" + dn + "': "));
         int exitCode = 0;
         for (int i = 0; i < tries; i++) {
-            if (main.ldapImpl.validatePassword(dn, password)) {
+            if (main.ldapImpl.validatePassword(dn, passphrase)) {
                 System.out.println("Password check successful!");
             } else {
                 System.out.println("Password check failed!");

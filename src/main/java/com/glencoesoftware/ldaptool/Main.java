@@ -102,6 +102,8 @@ public class Main
                 && !parseResult.isVersionHelpRequested()) {
             try {
                 init();
+            } catch (RuntimeException re) {
+                throw re;
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
@@ -133,6 +135,10 @@ public class Main
                 "classpath:ome/services/datalayer.xml",
                 "classpath*:beanRefContext.xml"});
         ldapImpl = (LdapImpl) context.getBean("internal-ome.api.ILdap");
+        if (!ldapImpl.getSetting()) {
+            throw new RuntimeException(
+                    "LDAP is not enabled, is `omero.ldap.config` set?");
+        }
         ldapTemplate = (LdapTemplate) context.getBean("ldapTemplate");
     }
 }

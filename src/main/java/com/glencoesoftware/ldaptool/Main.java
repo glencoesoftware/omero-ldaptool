@@ -26,8 +26,11 @@ import ch.qos.logback.classic.Level;
 import ome.logic.LdapImpl;
 import ome.system.OmeroContext;
 
-import java.io.File;
-import java.io.FileInputStream;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -67,7 +70,7 @@ public class Main
         required = true,
         scope = ScopeType.INHERIT
     )
-    File config;
+    Path config;
 
     // Non-CLI fields
     OmeroContext context;
@@ -97,32 +100,45 @@ public class Main
         if (doInit.get()
                 && !parseResult.isUsageHelpRequested()
                 && !parseResult.isVersionHelpRequested()) {
-            init();
+            try {
+                init();
+            } catch (RuntimeException re) {
+                throw re;
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
         }
         return new CommandLine.RunLast().execute(parseResult);
     }
 
-    public void init() {
+    public void init() throws IOException {
         ch.qos.logback.classic.Logger root = (ch.qos.logback.classic.Logger)
                 LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
         root.setLevel(Level.toLevel(logLevel));
 
-        log.info("Loading LDAP configuration from: {}",
-                config.getAbsolutePath());
-        try (FileInputStream v = new FileInputStream(config)) {
-            Properties properties = System.getProperties();
-            properties.load(v);
-            log.info("Properties: {}", properties);
-            System.setProperties(properties);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+        log.info("Loading LDAP configuration from: {}", config);
+        String asString = Files.readString(config);
+        // Configuration will come out of `omero config get` or similar without
+        // backslash escaping.  If configuration is sourced this way it is
+        // unlikely to be escaped correctly, a Java properties requirement,
+        // before being passed in so we will perform the escaping ourselves.
+        asString = asString.replace("\\", "\\\\");
+        ByteArrayInputStream v = new ByteArrayInputStream(
+                asString.getBytes(StandardCharsets.UTF_8));
+        Properties properties = System.getProperties();
+        properties.load(v);
+        log.info("Properties: {}", properties);
+        System.setProperties(properties);
 
         context = new OmeroContext(new String[]{
                 "classpath:ome/config.xml",
                 "classpath:ome/services/datalayer.xml",
                 "classpath*:beanRefContext.xml"});
         ldapImpl = (LdapImpl) context.getBean("internal-ome.api.ILdap");
+        if (!ldapImpl.getSetting()) {
+            throw new RuntimeException(
+                    "LDAP is not enabled, is `omero.ldap.config` set?");
+        }
         ldapTemplate = (LdapTemplate) context.getBean("ldapTemplate");
     }
 }

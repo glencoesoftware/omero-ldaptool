@@ -7,7 +7,7 @@ Requirements
 ============
 
 * OMERO 5.6.x+
-* Java 8+
+* Java 11+
 
 Workflow
 ========

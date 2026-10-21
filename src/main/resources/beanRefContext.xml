@@ -99,6 +99,13 @@
     <!-- FROM ome/services/sec-primitives.xml -->
 
     <bean id="roles" factory-bean="dbUserCheck" factory-method="getRoles"/>
+    <bean id="keystore" class="ome.security.KeyAndTrustStoreConfiguration" lazy-init="false">
+        <description>Sets the keystore and truststore System properties on start-up</description>
+        <property name="keyStore" value="${omero.security.keyStore}" />
+        <property name="keyStorePassword" value="${omero.security.keyStorePassword}" />
+        <property name="trustStore" value="${omero.security.trustStore}" />
+        <property name="trustStorePassword" value="${omero.security.trustStorePassword}" />
+    </bean>
 
     <!-- FROM ome/services/service-ome.api.IAdmin.xml -->
 

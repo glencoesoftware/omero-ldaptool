@@ -7,20 +7,25 @@ plugins {
 group = 'com.glencoesoftware.ldaptool'
 version = '0.4.1-SNAPSHOT'
 
-mainClassName = 'com.glencoesoftware.ldaptool.Main'
+application {
+  mainClass = 'com.glencoesoftware.ldaptool.Main'
+}
 
-compileJava {
-    options.release = 11
+
+java {
+  toolchain {
+    languageVersion = JavaLanguageVersion.of(11)
+  }
 }
 
 repositories {
     mavenCentral()
     maven {
-        name 'Unidata'
-        url 'https://artifacts.unidata.ucar.edu/content/repositories/unidata-releases'
+        name = 'Unidata'
+        url = 'https://artifacts.unidata.ucar.edu/content/repositories/unidata-releases'
     }
     maven {
-        url 'https://artifacts.openmicroscopy.org/artifactory/maven/'
+        url = 'https://artifacts.openmicroscopy.org/artifactory/maven/'
     }
 }
 
@@ -64,7 +69,7 @@ jar {
             "Implementation-Title": "OMERO LDAP tool",
             "Implementation-Version": archiveVersion,
             "Implementation-Vendor": "Glencoe Software Inc.",
-            "Main-Class": mainClassName,
+            "Main-Class": application.mainClass,
         )
     }
 }

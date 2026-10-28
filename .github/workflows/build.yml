@@ -9,7 +9,7 @@ jobs:
   build:
     strategy:
       matrix:
-        java: [11, 17]
+        java: [11, 17, 21, 25]
         os: [ubuntu-latest]
     runs-on: ${{ matrix.os }}
     steps:
@@ -19,28 +19,31 @@ jobs:
         with:
           java-version: ${{ matrix.java }}
           distribution: 'zulu'
+          cache: "gradle"
       - name: Run commands
         run: ./gradlew build
       - name: Upload artifacts
         uses: actions/upload-artifact@v7
-        if: matrix.java == 11
         with:
-          name: omero-ldaptool
+          name: omero-ldaptool ${{ matrix.java }}
           path: build/distributions/*
+          retention-days: 30
           if-no-files-found: error
-  upload:
+  release:
     name: Create release
+    permissions:
+      contents: write
     needs: build
     runs-on: ubuntu-latest
     if: startswith(github.ref, 'refs/tags/')
     steps:
       - name: Download artifacts
         uses: actions/download-artifact@v8
+        with:
+          name: omero-ldaptool 17
       - name: List artifacts
         run: ls -R
-      - name: Create release draft
-        uses: softprops/action-gh-release@v1
-        with:
-          files: omero-ldaptool/*
-          draft: true
-          fail_on_unmatched_files: true
+      - name: Create a GitHub release
+        run: gh release create --generate-notes "${GITHUB_REF#refs/tags/}" omero-ldaptool/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
